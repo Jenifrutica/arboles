@@ -1,0 +1,31 @@
+[project]
+name = "arboles-taxonomy"
+version = "1.0.0"
+description = "Ancestro común más cercano sobre la taxonomía de NCBI"
+readme = "../README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.3",
+    "networkx>=3.4",
+    "marisa-trie>=1.2",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "orjson>=3.10",
+    "pydantic>=2.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "httpx>=0.27"]
+ncbi = ["ete4>=4.4"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["taxonomy", "api"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"

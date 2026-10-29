@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Árbol de la Vida · Ancestro común sobre la taxonomía de NCBI</title>
+    <meta
+      name="description"
+      content="Visualizador 3D de la taxonomía de NCBI y del ancestro común más cercano entre dos especies."
+    />
+  </head>
+  <body>
+    <div id="app">
+      <div id="stage" aria-hidden="true"></div>
+      <div class="vignette" aria-hidden="true"></div>
+      <div class="grain" aria-hidden="true"></div>
+
+      <header class="brand">
+        <div class="brand__eyebrow">
+          <span class="dot"></span>
+          <span id="taxon-count">cargando…</span>
+        </div>
+        <h1>Árbol de la <em>Vida</em></h1>
+        <p class="brand__sub">
+          El ancestro común más cercano sobre la taxonomía real de NCBI.
+          <span class="dim">Árbol n-ario aumentado con saltos binarios.</span>
+        </p>
+      </header>
+
+      <section class="panel panel--query" id="query-panel" aria-label="Consulta de ancestro común">
+        <div class="panel__head">
+          <h2>Consulta</h2>
+          <button class="ghost" id="random-btn" type="button">Reto aleatorio</button>
+        </div>
+
+        <label class="field" data-slot="a">
+          <span class="field__label"><b class="tick tick--a">A</b> Especie A</span>
+          <input id="input-a" type="text" autocomplete="off" spellcheck="false" placeholder="Homo sapiens" />
+          <div class="field__menu" id="menu-a" role="listbox"></div>
+        </label>
+
+        <label class="field" data-slot="b">
+          <span class="field__label"><b class="tick tick--b">B</b> Especie B</span>
+          <input id="input-b" type="text" autocomplete="off" spellcheck="false" placeholder="Amanita muscaria" />
+          <div class="field__menu" id="menu-b" role="listbox"></div>
+        </label>
+
+        <div class="modes" role="group" aria-label="Modo del algoritmo">
+          <button class="mode is-active" data-mode="binary" type="button">
+            <strong>Optimizado</strong>
+            <span>saltos 2<sup>k</sup></span>
+          </button>
+          <button class="mode" data-mode="naive" type="button">
+            <strong>Ingenuo</strong>
+            <span>paso a paso</span>
+          </button>
+        </div>
+
+        <button class="primary" id="run-btn" type="button">
+          Buscar ancestro común
+          <span class="primary__hint">↵</span>
+        </button>
+
+        <p class="panel__foot" id="query-hint">
+          Arrastra para orbitar · rueda para acercar · clic en un nodo para desplegarlo
+        </p>
+      </section>
+
+      <section class="panel panel--result is-hidden" id="result-panel" aria-live="polite">
+        <div class="result__eyebrow" id="result-eyebrow">Ancestro común</div>
+        <h2 class="result__name" id="result-name">—</h2>
+        <div class="result__meta">
+          <span class="chip" id="result-rank">—</span>
+          <span class="chip chip--ghost" id="result-depth">—</span>
+        </div>
+
+        <div class="result__lineage" id="result-lineage"></div>
+
+        <div class="stats" id="result-stats">
+          <div class="stat">
+            <span class="stat__value" id="stat-steps">0</span>
+            <span class="stat__label">saltos</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" id="stat-naive">0</span>
+            <span class="stat__label">sin optimizar</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" id="stat-ratio">—</span>
+            <span class="stat__label">mejora</span>
+          </div>
+        </div>
+
+        <div class="bar" aria-hidden="true">
+          <div class="bar__fill" id="bar-fill"></div>
+        </div>
+
+        <p class="result__note" id="result-note"></p>
+
+        <div class="result__actions">
+          <button class="ghost" id="replay-btn" type="button">Repetir animación</button>
+          <button class="ghost" id="close-btn" type="button">Cerrar</button>
+        </div>
+      </section>
+
+      <section class="nodebar is-hidden" id="nodebar" aria-label="Nodo seleccionado">
+        <div class="nodebar__info">
+          <span class="nodebar__rank" id="nodebar-rank">—</span>
+          <strong id="nodebar-name">—</strong>
+          <span class="nodebar__meta" id="nodebar-meta"></span>
+        </div>
+        <div class="nodebar__actions">
+          <button class="ghost" id="add-child-btn" type="button">+ Añadir rama</button>
+          <button class="ghost ghost--danger" id="delete-node-btn" type="button">Eliminar</button>
+        </div>
+      </section>
+
+      <section class="legend" id="legend" aria-label="Rangos taxonómicos">
+        <button class="legend__toggle" id="legend-toggle" type="button">Rangos</button>
+        <div class="legend__body" id="legend-body"></div>
+      </section>
+
+      <footer class="credit">
+        Datos: NCBI Taxonomy · dominio público · 3.024.644 taxa leídos,
+        <span id="kept-count">—</span> conservados
+      </footer>
+
+      <div class="loader" id="loader">
+        <div class="loader__mark"></div>
+        <p id="loader-text">Cargando la taxonomía…</p>
+      </div>
+
+      <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal__card">
+          <button class="modal__close" id="modal-close" type="button" aria-label="Cerrar">×</button>
+          <h2 id="modal-title">Añadir rama</h2>
+          <p class="modal__sub" id="modal-sub"></p>
+          <div class="modal__body" id="modal-body"></div>
+          <div class="modal__actions">
+            <button class="ghost" id="modal-cancel" type="button">Cancelar</button>
+            <button class="primary" id="modal-confirm" type="button">Crear rama</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" role="status"></div>
+
+      <div class="tooltip" id="tooltip" role="tooltip"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
