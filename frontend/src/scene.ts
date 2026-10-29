@@ -62,13 +62,15 @@ export function rankStyle(rank: string): RankStyle {
 }
 
 export interface HeroSpec {
-  taxid: number;
+  taxid?: number;
   url: string;
   scale?: number;
   /** Vertical offset from the node, so the piece never covers its label. */
   offsetY?: number;
   /** Radial separation from the branch, in world units. */
   push?: number;
+  /** When set, the piece lives at a fixed spot instead of hanging from a node. */
+  fixed?: { x: number; y: number; z: number };
 }
 
 export class TreeScene {
@@ -93,12 +95,13 @@ export class TreeScene {
   private positions = new Map<number, Point>();
   private dataset?: Dataset;
   private heroes: Array<{
-    taxid: number;
+    taxid: number | undefined;
     object: THREE.Object3D;
     baseY: number;
     phase: number;
     offsetY: number;
     push: number;
+    fixed?: { x: number; y: number; z: number };
   }> = [];
   private cometA?: THREE.Mesh;
   private cometB?: THREE.Mesh;
@@ -678,6 +681,7 @@ export class TreeScene {
             phase: Math.random() * Math.PI * 2,
             offsetY: spec.offsetY ?? 1.7,
             push: spec.push ?? 1.6,
+            fixed: spec.fixed,
           });
         } catch (error) {
           console.warn(`no se pudo cargar ${spec.url}`, error);
@@ -689,7 +693,13 @@ export class TreeScene {
 
   private updateHeroes(): void {
     for (const hero of this.heroes) {
-      const point = this.positions.get(hero.taxid);
+      if (hero.fixed) {
+        hero.object.visible = true;
+        hero.baseY = hero.fixed.y;
+        hero.object.position.set(hero.fixed.x, hero.baseY, hero.fixed.z);
+        continue;
+      }
+      const point = hero.taxid === undefined ? undefined : this.positions.get(hero.taxid);
       if (!point) {
         hero.object.visible = false;
         continue;

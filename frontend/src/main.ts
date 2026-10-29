@@ -33,6 +33,7 @@ interface State {
   selected: number | null;
   expanded: Set<number>;
   forced: Set<number>;
+  pinned: Set<number>;
   last: LCAResult | null;
   busy: boolean;
   modalMode: "add" | "delete";
@@ -46,6 +47,7 @@ const state: State = {
   selected: null,
   expanded: new Set(),
   forced: new Set(),
+  pinned: new Set(),
   last: null,
   busy: false,
   modalMode: "add",
@@ -74,7 +76,8 @@ const toastElement = $("toast");
 
 function relayout(): void {
   if (!state.dataset) return;
-  const layout = computeLayout(state.dataset, state.expanded, BASE_DEPTH, state.forced);
+  const visible = new Set([...state.forced, ...state.pinned]);
+  const layout = computeLayout(state.dataset, state.expanded, BASE_DEPTH, visible);
   scene.setLayout(layout);
 }
 
@@ -182,9 +185,11 @@ async function boot(): Promise<void> {
       { taxid: 4751, url: "/assets/hero/fungi.glb", scale: 1.9, push: 2.8 },
       { taxid: 33090, url: "/assets/hero/plant.glb", scale: 1.9, push: 2.6, offsetY: 1.4 },
       { taxid: 33208, url: "/assets/hero/beetle.glb", scale: 1.9, push: 2.4 },
-      { taxid: 6447, url: "/assets/hero/shell.glb", scale: 1.9, push: 2.2 },
-      { taxid: 9606, url: "/assets/hero/human.glb", scale: 1.6, push: 1.8 },
-    ].filter((spec) => dataset.byId.has(spec.taxid));
+      // Los dos especímenes que viven en ramas demasiado profundas se exponen
+      // en la galería frontal, para que siempre estén a la vista.
+      { url: "/assets/hero/shell.glb", scale: 1.9, fixed: { x: -10.5, y: -5.6, z: 11 } },
+      { url: "/assets/hero/human.glb", scale: 1.7, fixed: { x: 10.5, y: -5.6, z: 11 } },
+    ].filter((spec) => spec.taxid === undefined || dataset.byId.has(spec.taxid));
 
     void scene.loadHeroes(heroes);
 
@@ -193,6 +198,10 @@ async function boot(): Promise<void> {
       setSlot("a", 9606);
       setSlot("b", 41956);
     }
+
+    setSlot("a", 9606);
+    setSlot("b", 41956);
+    selectNode(2);
 
     loader.classList.add("is-hidden");
     updateHint();
@@ -443,7 +452,6 @@ $("modal-confirm").addEventListener("click", async () => {
       closeModal();
       state.expanded.add(parentId);
       state.selected = created.id;
-      state.forced.clear();
       await refreshTree(`Rama “${created.name}” añadida.`);
       scene.flyTo(created.id, 8);
     } else {
