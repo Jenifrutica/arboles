@@ -167,6 +167,17 @@ async function boot(): Promise<void> {
     const dataset = buildDataset(payload);
     state.dataset = dataset;
 
+    // Los modelos viven en nodos muy profundos: fijamos sus linajes para que
+    // las siete piezas estén siempre en escena, colgadas de su rama real.
+    for (const anchor of [2, 4751, 33090, 33208, 6447, 9606]) {
+      let cursor = dataset.byId.get(anchor);
+      while (cursor && cursor.parent !== 0) {
+        state.pinned.add(cursor.id);
+        cursor = dataset.byId.get(cursor.parent);
+      }
+      state.pinned.add(anchor);
+    }
+
     scene.setDataset(dataset);
     relayout();
 
@@ -185,10 +196,8 @@ async function boot(): Promise<void> {
       { taxid: 4751, url: "/assets/hero/fungi.glb", scale: 1.9, push: 2.8 },
       { taxid: 33090, url: "/assets/hero/plant.glb", scale: 1.9, push: 2.6, offsetY: 1.4 },
       { taxid: 33208, url: "/assets/hero/beetle.glb", scale: 1.9, push: 2.4 },
-      // Los dos especímenes que viven en ramas demasiado profundas se exponen
-      // en la galería frontal, para que siempre estén a la vista.
-      { url: "/assets/hero/shell.glb", scale: 1.9, fixed: { x: -10.5, y: -5.6, z: 11 } },
-      { url: "/assets/hero/human.glb", scale: 1.7, fixed: { x: 10.5, y: -5.6, z: 11 } },
+      { taxid: 6447, url: "/assets/hero/shell.glb", scale: 2.2, push: 2.6 },
+      { taxid: 9606, url: "/assets/hero/human.glb", scale: 1.8, push: 2.2 },
     ].filter((spec) => spec.taxid === undefined || dataset.byId.has(spec.taxid));
 
     void scene.loadHeroes(heroes);
